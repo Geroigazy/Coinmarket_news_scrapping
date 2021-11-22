@@ -1,6 +1,6 @@
 import re
 from flask import Flask, render_template
-from flask import request
+from flask import request, Markup
 from flask_sqlalchemy import SQLAlchemy
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -83,11 +83,11 @@ def login():
     if auth:
         nick = Account.query.filter_by(nickname = auth.username).first()
     if auth and auth.password == nick.password:
-        token = jwt.encode({'user':auth.username, 'exp':datetime.utcnow() + timedelta(minutes=1)}, app.config['SECRET_KEY'])
+        token = jwt.encode({'user':auth.username, 'exp':datetime.utcnow() + timedelta(minutes=5)}, app.config['SECRET_KEY'])
         sub = Account.query.filter_by(nickname = auth.username).first()
         sub.token = token
         db.session.commit()
-        return jsonify({'token': token.decode('UTF-8')})
+        return '''<h1>''' + sub.nickname + ''' token:</h1> <p>''' + token.decode('UTF-8') + '''</p> <h2><a href=" http://127.0.0.1:5000/coin">Coin</a></h2>'''
     
     return make_response('Could not verify!', 401, {'WWW-Authenticate': 'Basic realm="Login required'})
 
@@ -110,7 +110,7 @@ def token_required(f):
 @app.route('/protected')
 @token_required
 def protected():
-    return "<h1>Hello, token which is provided is correct </h1>, "
+    return '''<h1>Hello, token which is provided is correct </h1><h2><a href=" http://127.0.0.1:5000/coin">Coin</a></h2> '''
 
 @app.route('/coin', methods = ['GET', 'POST'])
 def coin():
@@ -128,13 +128,13 @@ def coin():
             das += '<p>' + news.find('p').text + '</p>'
         for news in containers:
             sum += '<p>' + summ(news.find('p').text + '</p>')
+        
         new_par = Coinnews(coin, das, sum)
         db.session.add(new_par)
         db.session.commit()
-        return '''
-                  <h1>The ''' + new_par.coin_name +''' news: </h1>
-                  <div style="width: 400px; display: inline-block; margin-right: 100px;">''' + new_par.news + '''</div>
-                  <div style="width: 400px; display: inline-block;">''' + new_par.sum_news + '''</div>'''
+        das = Markup(das)
+        sum = Markup(sum)
+        return render_template('coin.html', name=new_par.coin_name, news=das, sum_news=sum)
     return '''
            <form method="POST">
                <div><label>Coin: <input type="text" name="coin"></label></div>
