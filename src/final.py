@@ -76,46 +76,49 @@ def summ(news):
 def index():
     return render_template('index.html')
 
-@app.route('/login')
+@app.route('/login', methods = ['GET', 'POST'])
 def login():
-    
-    auth = request.authorization
-    if auth:
-        nick = Account.query.filter_by(nickname = auth.username).first()
-    if auth and auth.password == nick.password:
-        token = jwt.encode({'user':auth.username, 'exp':datetime.utcnow() + timedelta(minutes=5)}, app.config['SECRET_KEY'])
-        sub = Account.query.filter_by(nickname = auth.username).first()
-        sub.token = token
-        db.session.commit()
-        return '''<h1>''' + sub.nickname + ''' token:</h1> <p>''' + token.decode('UTF-8') + '''</p> <h2><a href=" http://127.0.0.1:5000/coin">Coin</a></h2>'''
-    
-    return make_response('Could not verify!', 401, {'WWW-Authenticate': 'Basic realm="Login required'})
+    if request.method == 'POST':
+        username = request.form.get('email')
+        password = request.form.get('pwd')
+        nick = Account.query.filter_by(nickname = username).first()
+        if username == nick.nickname and password == nick.password:
+            token = jwt.encode({'user':username, 'exp':datetime.utcnow() + timedelta(minutes=5)}, app.config['SECRET_KEY'])
+            sub = Account.query.filter_by(nickname = username).first()
+            sub.token = token
+            db.session.commit()
+            return render_template('token.html', nick=sub.nickname, token=token.decode('UTF-8'))
+        
+    return render_template('login.html')
 
 
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         token = request.args.get('token')
-
+        text = ''
         if not token:
-            return "<h1>Hello, Token is missing! </h1>"
+            text = 'Hello, Token is missing!'
+            return render_template('protected.html', check=text)
 
         try:
             data = jwt.decode(token, app.config['SECRET_KEY'])
         except:
-            return "<h1>Hello, Could not verify the token </h1>"
+            text = 'Hello, Could not verify the token'
+            return render_template('protected.html', check=text)
         return f(*args, **kwargs)
     return decorated
 
 @app.route('/protected')
 @token_required
 def protected():
-    return '''<h1>Hello, token which is provided is correct </h1><h2><a href=" http://127.0.0.1:5000/coin">Coin</a></h2> '''
+    text = 'Hello, provided token is correct!'
+    return render_template('protected.html', check = text)
 
 @app.route('/coin', methods = ['GET', 'POST'])
 def coin():
     if request.method == 'POST':
-        coin = request.form.get('coin')
+        coin = request.form.get('pwd')
         url = 'https://coinmarketcap.com/currencies/'+ coin.lower() + '/news/'
         driver = webdriver.Chrome(PATH)
         driver.get(url)
@@ -135,11 +138,7 @@ def coin():
         das = Markup(das)
         sum = Markup(sum)
         return render_template('coin.html', name=new_par.coin_name, news=das, sum_news=sum)
-    return '''
-           <form method="POST">
-               <div><label>Coin: <input type="text" name="coin"></label></div>
-               <input type="submit" value="Submit">
-           </form>'''
+    return render_template('coin-form.html')
     
 if __name__ == '__main__':
     app.run(debug=True)
