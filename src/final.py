@@ -118,7 +118,7 @@ def protected():
 @app.route('/coin', methods = ['GET', 'POST'])
 def coin():
     if request.method == 'POST':
-        coin = request.form.get('pwd')
+        coin = request.form.get('text')
         url = 'https://coinmarketcap.com/currencies/'+ coin.lower() + '/news/'
         driver = webdriver.Chrome(PATH)
         driver.get(url)
