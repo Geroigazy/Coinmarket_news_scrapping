@@ -1,0 +1,26 @@
+    {% extends "bootstrap/base.html" %}
+    {% block title %}The {{name}} news{% endblock %}
+
+
+
+    {% block content %}
+    <nav class="navbar navbar-default">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            <a class="navbar-brand" href="#">Final Project</a>
+          </div>
+          <ul class="nav navbar-nav">
+            <li><a href="#">Home</a></li>
+            <li><a href="http://127.0.0.1:5000/login">Login</a></li>
+            <li><a href="http://127.0.0.1:5000/protected">Protected</a></li>
+            <li class="active"><a href="http://127.0.0.1:5000/coin">Coin</a></li>
+          </ul>
+        </div>
+      </nav>
+    
+    <h1>The {{name}} news: </h1>
+    <div class="row">
+    <div class="col-sm-6" style="display: inline-block; margin-right: 100px;">{{news}}</div>
+    <div class="col-sm-3" style="display: inline-block;">{{sum_news}}</div>
+    </div>
+    {% endblock %}
